@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Builder - Ibrahim Abd El-Gawwad</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  padding: 20px;
+  direction: rtl;
+}
+body.en { direction: ltr; }
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.header-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+h1 {
+  text-align: center;
+  color: #1a1a2e;
+  font-size: 24px;
+}
+.lang-toggle {
+  display: flex;
+  gap: 6px;
+}
+.lang-toggle button {
+  padding: 6px 16px;
+  border: 2px solid #e94560;
+  border-radius: 20px;
+  background: #fff;
+  color: #e94560;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+.lang-toggle button.active {
+  background: #e94560;
+  color: #fff;
+}
+h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #1a1a2e;
+  border-bottom: 2px solid #e94560;
+  padding-bottom: 4px;
+}
+.form-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.preview-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  color: #555;
+}
+input, textarea, select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border 0.2s;
+}
+input:focus, textarea:focus { outline: none; border-color: #e94560; }
+textarea { resize: vertical; min-height: 40px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.skill-group { margin-bottom: 10px; }
+.skill-group label { font-size: 12px; color: #777; margin: 5px 0 2px; }
+
+.exp-entry {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
+  position: relative;
+}
+.remove-btn {
+  position: absolute;
+  top: 6px; left: 6px;
+  background: #ff6b6b;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 22px;
+  text-align: center;
+}
+.add-btn {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.add-btn:hover { background: #c0392b; }
+.btn-group {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.btn-group button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  min-width: 90px;
+}
+.btn-pdf { background: #e94560; color: #fff; }
+.btn-pdf:hover { background: #c0392b; }
+.btn-word { background: #2d6ba4; color: #fff; }
+.btn-word:hover { background: #1a4a7a; }
+.btn-print { background: #1a1a2e; color: #fff; }
+.btn-print:hover { background: #16213e; }
+.btn-reset { background: #636e72; color: #fff; }
+.btn-reset:hover { background: #2d3436; }
+.btn-clear { background: #d63031; color: #fff; }
+.btn-clear:hover { background: #b81e1e; }
+
+/* ====== CV OUTPUT (ATS-friendly) ====== */
+.cv-output {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #000;
+  background: #fff;
+  padding: 30px 25px;
+  border: 1px solid #ddd;
+  min-height: 600px;
+  direction: ltr;
+  text-align: left;
+}
+.cv-output.ar { direction: rtl; text-align: right; }
+.cv-output .cv-header { margin-bottom: 12px; }
+.cv-output .cv-name { font-size: 20pt; font-weight: 700; color: #1a1a2e; margin: 0; }
+.cv-output .cv-title { font-size: 11pt; color: #555; margin: 2px 0; }
+.cv-output .cv-contact { font-size: 10pt; color: #444; margin: 4px 0 0; }
+.cv-output .cv-section { margin: 14px 0 0; }
+.cv-output .cv-section-title {
+  font-size: 12pt; font-weight: 700; color: #1a1a2e;
+  border-bottom: 2px solid #1a1a2e;
+  padding-bottom: 2px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cv-output .cv-item { margin-bottom: 10px; }
+.cv-output .cv-item-header { font-weight: 700; font-size: 11pt; }
+.cv-output .cv-item-date { font-size: 10pt; color: #777; float: right; }
+.cv-output.ar .cv-item-date { float: left; }
+.cv-output ul { margin: 4px 0 0; padding-left: 18px; }
+.cv-output.ar ul { padding-left: 0; padding-right: 18px; }
+.cv-output li { font-size: 10.5pt; margin-bottom: 2px; }
+.cv-output .cv-skills { font-size: 10.5pt; }
+
+@media print {
+  body { background: #fff; padding: 0; }
+  .form-section, .btn-group, .header-bar, .add-btn, .remove-btn, .lang-toggle { display: none !important; }
+  .container { display: block; }
+  .preview-section { box-shadow: none; border: none; padding: 0; border-radius: 0; }
+  .cv-output { padding: 0; border: none; }
+  @page { margin: 0.5in; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <h1 id="mainTitle">📄 منشئ السيرة الذاتية</h1>
+  <div class="lang-toggle">
+    <button id="btnEn" onclick="setLang('en')">English</button>
+    <button id="btnAr" class="active" onclick="setLang('ar')">العربية</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ====== FORM ====== -->
+  <div class="form-section">
+    <h2 id="lblPersonal">المعلومات الشخصية</h2>
+    <div class="row">
+      <div><label id="lblName">الاسم الكامل</label><input id="fullName"></div>
+      <div><label id="lblTitle">المسمى الوظيفي</label><input id="jobTitle"></div>
+    </div>
+    <div class="row">
+      <div><label id="lblEmail">البريد الإلكتروني</label><input id="email"></div>
+      <div><label id="lblPhone">رقم الهاتف</label><input id="phone"></div>
+    </div>
+    <div><label id="lblSummary">الملخص المهني</label>
+      <textarea id="summary" rows="3"></textarea>
+    </div>
+
+    <h2 id="lblSkills" style="margin-top:16px;">المهارات</h2>
+    <div class="skill-group">
+      <label id="lblTechSkills">المهارات التقنية والإدارية</label>
+      <textarea id="techSkills" rows="2"></textarea>
+    </div>
+    <div class="skill-group">
+      <label id="lblSoftSkills">المهارات الشخصية</label>
+      <textarea id="softSkills" rows="2"></textarea>
+    </div>
+    <div class="skill-group">
+      <label id="lblLang">اللغات</label>
+      <textarea id="languages" rows="1"></textarea>
+    </div>
+
+    <h2 id="lblExp" style="margin-top:16px;">الخبرات السابقة</h2>
+    <div id="expContainer">
+      <div class="exp-entry">
+        <button class="remove-btn" onclick="removeExp(this)">×</button>
+        <div class="row">
+          <div><label id="lblCompany">الشركة</label><input class="exp-company"></div>
+          <div><label id="lblRole">المسمى</label><input class="exp-role"></div>
+        </div>
+        <div class="row">
+          <div><label id="lblFrom">من (MM/YYYY)</label><input class="exp-from"></div>
+          <div><label id="lblTo">إلى</label><input class="exp-to"></div>
+        </div>
+        <label id="lblAchieve">الإنجازات (كل إنجاز في سطر)</label>
+        <textarea class="exp-achieve" rows="4"></textarea>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addExp()">+ إضافة خبرة أخرى</button>
+
+    <h2 id="lblEdu" style="margin-top:16px;">التعليم</h2>
+    <div class="row">
+      <div><label id="lblSchool">الجامعة/المعهد</label><input id="eduSchool"></div>
+      <div><label id="lblDegree">الشهادة</label><input id="eduDegree"></div>
+    </div>
+    <div class="row">
+      <div><label id="lblYear">سنة التخرج</label><input id="eduYear"></div>
+      <div><label id="lblGrade">التقدير</label><input id="eduGrade"></div>
+    </div>
+
+    <h2 id="lblCerts" style="margin-top:16px;">الشهادات والكورسات</h2>
+    <textarea id="certifications" rows="6"></textarea>
+
+    <h2 id="lblJD" style="margin-top:16px;">وصف الوظيفة (JD)</h2>
+    <textarea id="jdInput" rows="4" placeholder="الصق وصف الوظيفة لتحسين التوافق مع ATS..."></textarea>
+
+    <div class="btn-group">
+      <button class="btn-pdf" onclick="generatePDF()">📄 PDF — عربي</button>
+      <button class="btn-pdf" onclick="generatePDFEn()">📄 PDF — English</button>
+      <button class="btn-word" onclick="generateWord()">📝 Word — عربي</button>
+      <button class="btn-word" onclick="generateWordEn()">📝 Word — English</button>
+      <button class="btn-print" onclick="window.print()">🖨️ طباعة</button>
+      <button class="btn-reset" onclick="resetForm()">🔄 إعادة</button>
+    </div>
+  </div>
+
+  <!-- ====== PREVIEW ====== -->
+  <div class="preview-section">
+    <h2 id="lblPreview">معاينة الـ CV</h2>
+    <div class="cv-output" id="cvPreview">
+      <div class="cv-header">
+      <div class="cv-name" id="previewName"></div>
+      <div class="cv-title" id="previewTitle"></div>
+      <div class="cv-contact" id="previewContact"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secSummary">Summary</div>
+        <p id="previewSummary" style="font-size:10.5pt;"></p>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secSkills">Skills</div>
+        <div class="cv-skills" id="previewSkills"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secExp">Experience</div>
+        <div id="previewExp"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secEdu">Education</div>
+        <div id="previewEdu"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secCerts">Certifications</div>
+        <div id="previewCerts" style="font-size:10.5pt;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ====== BILINGUAL DATA ======
+// ====== LANGUAGE TOGGLE ======
+let currentLang = 'ar';
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btnEn').className = lang === 'en' ? 'active' : '';
+  document.getElementById('btnAr').className = lang === 'ar' ? 'active' : '';
+  document.body.className = lang === 'en' ? 'en' : '';
+  document.querySelector('.cv-output').className = 'cv-output' + (lang === 'ar' ? ' ar' : '');
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  translateUI(lang);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btnEn').className = lang === 'en' ? 'active' : '';
+  document.getElementById('btnAr').className = lang === 'ar' ? 'active' : '';
+  document.body.className = lang === 'en' ? 'en' : '';
+  document.querySelector('.cv-output').className = 'cv-output' + (lang === 'ar' ? ' ar' : '');
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  fillData(lang);
+  translateUI(lang);
+}
+
+function translateUI(lang) {
+  const t = lang === 'ar' ? {
+    mainTitle: '📄 منشئ السيرة الذاتية',
+    lblPersonal: 'المعلومات الشخصية',
+    lblName: 'الاسم الكامل', lblTitle: 'المسمى الوظيفي',
+    lblEmail: 'البريد الإلكتروني', lblPhone: 'رقم الهاتف',
+    lblSummary: 'الملخص المهني',
+    lblSkills: 'المهارات',
+    lblTechSkills: 'المهارات التقنية والإدارية',
+    lblSoftSkills: 'المهارات الشخصية',
+    lblLang: 'اللغات',
+    lblExp: 'الخبرات السابقة',
+    lblCompany: 'الشركة', lblRole: 'المسمى',
+    lblFrom: 'من (MM/YYYY)', lblTo: 'إلى',
+    lblAchieve: 'الإنجازات (كل إنجاز في سطر)',
+    lblEdu: 'التعليم',
+    lblSchool: 'الجامعة/المعهد', lblDegree: 'الشهادة',
+    lblYear: 'سنة التخرج', lblGrade: 'التقدير',
+    lblCerts: 'الشهادات والكورسات',
+    lblJD: 'وصف الوظيفة (JD)',
+    lblPreview: 'معاينة الـ CV',
+    secSummary: 'ملخص', secSkills: 'المهارات', secExp: 'الخبرات', secEdu: 'التعليم', secCerts: 'الشهادات',
+    addExpText: '+ إضافة خبرة أخرى',
+    btnPDF: '📄 PDF', btnWord: '📝 Word', btnPrint: '🖨️ طباعة', btnReset: '🔄 إعادة'
+  } : {
+    mainTitle: '📄 CV Builder',
+    lblPersonal: 'Personal Information',
+    lblName: 'Full Name', lblTitle: 'Job Title',
+    lblEmail: 'Email', lblPhone: 'Phone',
+    lblSummary: 'Professional Summary',
+    lblSkills: 'Skills',
+    lblTechSkills: 'Technical & Administrative Skills',
+    lblSoftSkills: 'Soft Skills',
+    lblLang: 'Languages',
+    lblExp: 'Work Experience',
+    lblCompany: 'Company', lblRole: 'Role',
+    lblFrom: 'From (MM/YYYY)', lblTo: 'To',
+    lblAchieve: 'Achievements (one per line)',
+    lblEdu: 'Education',
+    lblSchool: 'University/Institute', lblDegree: 'Degree',
+    lblYear: 'Graduation Year', lblGrade: 'Grade',
+    lblCerts: 'Certifications & Courses',
+    lblJD: 'Job Description (JD)',
+    lblPreview: 'CV Preview',
+    secSummary: 'Summary', secSkills: 'Skills', secExp: 'Experience', secEdu: 'Education', secCerts: 'Certifications',
+    addExpText: '+ Add Experience',
+    btnPDF: '📄 PDF', btnWord: '📝 Word', btnPrint: '🖨️ Print', btnReset: '🔄 Reset'
+  };
+
+  document.getElementById('mainTitle').textContent = t.mainTitle;
+  document.getElementById('lblPersonal').textContent = t.lblPersonal;
+  document.getElementById('lblName').textContent = t.lblName;
+  document.getElementById('lblTitle').textContent = t.lblTitle;
+  document.getElementById('lblEmail').textContent = t.lblEmail;
+  document.getElementById('lblPhone').textContent = t.lblPhone;
+  document.getElementById('lblSummary').textContent = t.lblSummary;
+  document.getElementById('lblSkills').textContent = t.lblSkills;
+  document.getElementById('lblTechSkills').textContent = t.lblTechSkills;
+  document.getElementById('lblSoftSkills').textContent = t.lblSoftSkills;
+  document.getElementById('lblLang').textContent = t.lblLang;
+  document.getElementById('lblExp').textContent = t.lblExp;
+  document.getElementById('lblEdu').textContent = t.lblEdu;
+  document.getElementById('lblSchool').textContent = t.lblSchool;
+  document.getElementById('lblDegree').textContent = t.lblDegree;
+  document.getElementById('lblYear').textContent = t.lblYear;
+  document.getElementById('lblGrade').textContent = t.lblGrade;
+  document.getElementById('lblCerts').textContent = t.lblCerts;
+  document.getElementById('lblJD').textContent = t.lblJD;
+  document.getElementById('lblPreview').textContent = t.lblPreview;
+  document.getElementById('secSummary').textContent = t.secSummary;
+  document.getElementById('secSkills').textContent = t.secSkills;
+  document.getElementById('secExp').textContent = t.secExp;
+  document.getElementById('secEdu').textContent = t.secEdu;
+  document.getElementById('secCerts').textContent = t.secCerts;
+
+  // Update experience entry labels
+  document.querySelectorAll('.exp-entry').forEach((el, i) => {
+    const key = i === 0 ? '' : '' + (i+1);
+    el.querySelector('label:first-of-type').textContent = t.lblCompany;
+    el.querySelectorAll('label')[1].textContent = t.lblRole;
+    el.querySelectorAll('label')[2].textContent = t.lblFrom;
+    el.querySelectorAll('label')[3].textContent = t.lblTo;
+    const achieveLabel = el.querySelector('label:last-of-type');
+    if (achieveLabel) achieveLabel.textContent = t.lblAchieve;
+  });
+
+  // Update add button
+  document.querySelector('.add-btn').textContent = t.addExpText;
+
+  // JD placeholder
+  document.getElementById('jdInput').placeholder = lang === 'ar' ? 'الصق وصف الوظيفة لتحسين التوافق مع ATS...' : 'Paste job description here to optimize ATS matching...';
+}
+
+// ====== EXPERIENCE ======
+function addExp(data) {
+  const c = document.getElementById('expContainer');
+  const d = document.createElement('div');
+  d.className = 'exp-entry';
+  const lang = currentLang;
+  d.innerHTML = `
+    <button class="remove-btn" onclick="removeExp(this)">×</button>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'الشركة' : 'Company'}</label><input class="exp-company" value="${data?.company||''}"></div>
+      <div><label>${lang === 'ar' ? 'المسمى' : 'Role'}</label><input class="exp-role" value="${data?.role||''}"></div>
+    </div>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'من (MM/YYYY)' : 'From (MM/YYYY)'}</label><input class="exp-from" value="${data?.from||''}"></div>
+      <div><label>${lang === 'ar' ? 'إلى' : 'To'}</label><input class="exp-to" value="${data?.to||'Present'}"></div>
+    </div>
+    <label>${lang === 'ar' ? 'الإنجازات (كل إنجاز في سطر)' : 'Achievements (one per line)'}</label>
+    <textarea class="exp-achieve" rows="4">${data?.achieve||''}</textarea>
+  `;
+  c.appendChild(d);
+  updatePreview();
+}
+
+function removeExp(btn) {
+  if (document.querySelectorAll('.exp-entry').length <= 1) return;
+  btn.parentElement.remove();
+  updatePreview();
+}
+
+document.addEventListener('input', updatePreview);
+document.addEventListener('change', updatePreview);
+
+function val(id) { return document.getElementById(id)?.value||''; }
+
+function updatePreview() {
+  const isAr = currentLang === 'ar';
+  document.getElementById('previewName').textContent = val('fullName') || (isAr ? '[الاسم]' : '[Your Name]');
+  document.getElementById('previewTitle').textContent = val('jobTitle') || (isAr ? 'المسمى' : 'Job Title');
+  const em = val('email'), ph = val('phone');
+  document.getElementById('previewContact').textContent = (em||ph) ? `${em} ${em&&ph?' | ':''}${ph}` : (isAr ? 'بريد | هاتف' : 'Email | Phone');
+  document.getElementById('previewSummary').textContent = val('summary') || (isAr ? 'ملخص مهني...' : 'Professional summary...');
+
+  const ts = val('techSkills'), ss = val('softSkills'), la = val('languages');
+  const skDiv = document.getElementById('previewSkills');
+  const lTech = isAr ? 'تقني:' : 'Technical:';
+  const lSoft = isAr ? 'شخصي:' : 'Soft:';
+  const lLang = isAr ? 'لغات:' : 'Languages:';
+  skDiv.innerHTML = (ts ? `<span><strong>${lTech}</strong> ${ts}</span><br>` : '') +
+                    (ss ? `<span><strong>${lSoft}</strong> ${ss}</span><br>` : '') +
+                    (la ? `<span><strong>${lLang}</strong> ${la}</span>` : '') ||
+                    (isAr ? '<span>المهارات...</span>' : '<span>Skills...</span>');
+
+  const expDiv = document.getElementById('previewExp');
+  const entries = document.querySelectorAll('.exp-entry');
+  const defaultCo = isAr ? 'شركة' : 'Company';
+  const defaultRo = isAr ? 'المسمى' : 'Job Title';
+  const defaultFr = 'MM/YYYY';
+  const defaultTo = isAr ? 'حتى الآن' : 'Present';
+  const defaultLi = isAr ? 'إنجاز' : 'Achievement';
+  const defaultGrade = isAr ? 'التقدير: ' : 'Grade: ';
+  const defaultDegree = isAr ? 'الشهادة' : 'Degree';
+  const defaultSchool = isAr ? 'الجامعة' : 'Institution';
+  const defaultCert = isAr ? '[الشهادات]' : '[Certifications]';
+
+  if (entries.length === 0) {
+    expDiv.innerHTML = `<div class="cv-item"><div class="cv-item-header">${defaultRo} — ${defaultCo}</div><div class="cv-item-date">${defaultFr} — ${defaultTo}</div><ul><li>${defaultLi}</li></ul></div>`;
+  } else {
+    let html = '';
+    entries.forEach(e => {
+      const co = e.querySelector('.exp-company').value || defaultCo;
+      const ro = e.querySelector('.exp-role').value || defaultRo;
+      const fr = e.querySelector('.exp-from').value || defaultFr;
+      const to = e.querySelector('.exp-to').value || defaultTo;
+      const ac = e.querySelector('.exp-achieve').value;
+      const bullets = ac.split('\n').filter(Boolean).map(a => `<li>${a}</li>`).join('');
+      html += `<div class="cv-item"><div class="cv-item-header">${ro} — ${co}</div><div class="cv-item-date">${fr} — ${to}</div><ul>${bullets||`<li>${defaultLi}</li>`}</ul></div>`;
+    });
+    expDiv.innerHTML = html;
+  }
+
+  const school = val('eduSchool'), degree = val('eduDegree'), year = val('eduYear'), grade = val('eduGrade');
+  document.getElementById('previewEdu').innerHTML =
+    `<div class="cv-item"><div class="cv-item-header">${degree||defaultDegree} — ${school||defaultSchool}</div><div class="cv-item-date">${year||'Year'}</div><div style="font-size:10pt;">${grade ? defaultGrade+grade : ''}</div></div>`;
+
+  const certs = val('certifications');
+  document.getElementById('previewCerts').innerHTML = certs.replace(/\n/g, '<br>') || defaultCert;
+}
+
+// ====== EXPORT: PDF ======
+function generatePDF() {
+  updatePreview();
+  const el = document.getElementById('cvPreview');
+  const opt = {
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: (val('fullName')||'CV').replace(/\s+/g,'_') + '_CV.pdf',
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(el).save();
+}
+
+// ====== EXPORT: WORD ======
+function generateWord() {
+  updatePreview();
+  const name = val('fullName') || 'CV';
+  const isAr = currentLang === 'ar';
+
+  // Build the HTML for Word document (Word can open HTML as .doc)
+  const dir = isAr ? 'rtl' : 'ltr';
+  const align = isAr ? 'right' : 'left';
+
+  // Get all data
+  const contact = document.getElementById('previewContact').textContent;
+  const summary = document.getElementById('previewSummary').textContent;
+  const skills = document.getElementById('previewSkills').innerHTML;
+  const expHTML = document.getElementById('previewExp').innerHTML;
+  const eduHTML = document.getElementById('previewEdu').innerHTML;
+  const certsHTML = document.getElementById('previewCerts').innerHTML;
+
+  const wordContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; direction: ${dir}; text-align: ${align}; margin: 0.5in; }
+h1 { font-size: 20pt; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
+.title { font-size: 11pt; color: #555; margin: 0 0 2px; }
+.contact { font-size: 10pt; color: #444; margin: 0 0 12px; }
+.section-title { font-size: 12pt; font-weight: 700; color: #1a1a2e; border-bottom: 2px solid #1a1a2e; padding-bottom: 2px; margin: 14px 0 6px; text-transform: uppercase; }
+.item { margin-bottom: 10px; }
+.item-header { font-weight: 700; font-size: 11pt; }
+.item-date { font-size: 10pt; color: #777; float: ${isAr ? 'left' : 'right'}; }
+ul { margin: 4px 0 0; padding-${isAr ? 'right' : 'left'}: 18px; }
+li { font-size: 10.5pt; margin-bottom: 2px; }
+.skills { font-size: 10.5pt; }
+</style>
+</head>
+<body>
+<h1>${val('fullName') || 'Your Name'}</h1>
+<div class="title">${val('jobTitle') || 'Job Title'}</div>
+<div class="contact">${contact}</div>
+
+<div class="section-title">${isAr ? 'ملخص' : 'Summary'}</div>
+<p>${summary}</p>
+
+<div class="section-title">${isAr ? 'المهارات' : 'Skills'}</div>
+<div class="skills">${skills}</div>
+
+<div class="section-title">${isAr ? 'الخبرات' : 'Experience'}</div>
+${expHTML}
+
+<div class="section-title">${isAr ? 'التعليم' : 'Education'}</div>
+${eduHTML}
+
+<div class="section-title">${isAr ? 'الشهادات' : 'Certifications'}</div>
+<div style="font-size:10.5pt;">${certsHTML}</div>
+</body>
+</html>`;
+
+  const blob = new Blob([wordContent], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name.replace(/\s+/g, '_') + '_CV.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ====== EXPORT: PDF ENGLISH ======
+function generatePDFEn() {
+  const prevLang = currentLang;
+  setLang('en');
+  generatePDF();
+  setLang(prevLang);
+}
+
+// ====== EXPORT: WORD ENGLISH ======
+function generateWordEn() {
+  const prevLang = currentLang;
+  setLang('en');
+  generateWord();
+  setLang(prevLang);
+}
+
+// ====== RESET ======
+function resetForm() {
+  if (!confirm(currentLang === 'ar' ? 'مسح كل البيانات؟' : 'Clear all data?')) return;
+  document.querySelectorAll('input, textarea').forEach(e => e.value = '');
+  document.getElementById('expContainer').innerHTML = '';
+  addExp({ company: '', role: '', from: '', to: '', achieve: '' });
+  updatePreview();
+}
+
+// ====== INIT ======
+updatePreview();
+</script>
+</body>
+</html>
