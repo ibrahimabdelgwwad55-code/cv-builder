@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATS CV Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f5f7;
+  color: #222;
+  padding: 20px;
+}
+body.en { direction: ltr; }
+.container {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.header h1 { font-size: 22px; color: #1a1a2e; }
+.lang-toggle button {
+  padding: 6px 14px; border: 1px solid #ccc; background: #fff; cursor: pointer;
+  font-size: 12px; border-radius: 4px; font-weight: 600;
+}
+.lang-toggle button.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+.form-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.form-section h2 {
+  font-size: 14px;
+  color: #1a1a2e;
+  border-bottom: 2px solid #1a1a2e;
+  padding-bottom: 4px;
+  margin: 18px 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-section h2:first-of-type { margin-top: 0; }
+label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 3px; }
+input, textarea, select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: #1a1a2e; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.single { margin-bottom: 8px; }
+
+/* Tags */
+.tags-wrap { border: 1px solid #ccc; border-radius: 4px; padding: 6px 8px; min-height: 38px; cursor: text; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tags-wrap:focus-within { border-color: #1a1a2e; }
+.tag { background: #e0e7ff; color: #1a1a2e; font-size: 12px; padding: 2px 8px; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px; }
+.tag-remove { cursor: pointer; font-weight: 700; font-size: 14px; color: #666; }
+.tag-remove:hover { color: #d63031; }
+.tags-input { border: none; outline: none; flex: 1; min-width: 80px; padding: 4px 0; font-size: 13px; }
+
+/* Entries */
+.entry { background: #f9f9fb; border: 1px solid #e8e8ec; border-radius: 6px; padding: 12px; margin-bottom: 10px; position: relative; }
+.entry .row { margin-bottom: 6px; }
+.entry-remove { position: absolute; top: 6px; inset-inline-end: 8px; background: none; border: none; font-size: 18px; cursor: pointer; color: #999; line-height: 1; }
+.entry-remove:hover { color: #d63031; }
+.add-btn { background: none; border: 1px dashed #aaa; color: #555; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%; margin-top: 2px; }
+.add-btn:hover { border-color: #1a1a2e; color: #1a1a2e; }
+
+/* Buttons */
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.btn-group button { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn-pdf { background: #d63031; color: #fff; }
+.btn-pdf:hover { background: #b81e1e; }
+.btn-print { background: #636e72; color: #fff; }
+.btn-print:hover { background: #2d3436; }
+.btn-reset { background: #b2bec3; color: #333; }
+.btn-reset:hover { background: #95a0a6; }
+.btn-import { background: #0984e3; color: #fff; font-size: 14px; padding: 14px 20px; width: 100%; border-radius: 8px; }
+.btn-import:hover { background: #0767b3; }
+.import-status { font-size: 12px; color: #555; margin-top: 8px; }
+.import-zone {
+  border: 2px dashed #0984e3; border-radius: 10px; padding: 24px 16px;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: #f0f7ff;
+}
+.import-zone:hover, .import-zone.dragover { background: #dceaff; border-color: #0652a3; }
+.import-zone .import-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+.import-zone .import-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.import-zone .import-sub { font-size: 11px; color: #777; margin-top: 4px; }
+
+/* Preview */
+.preview-section { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px; }
+.preview-section h2 { font-size: 14px; color: #555; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.cv-output {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #000;
+  padding: 0;
+  direction: rtl;
+  text-align: right;
+}
+.cv-output.en { direction: ltr; text-align: left; }
+.cv-output .cv-header { margin-bottom: 14px; }
+.cv-output .cv-name { font-size: 20pt; font-weight: 700; color: #1a1a2e; }
+.cv-output .cv-title { font-size: 11pt; color: #555; margin: 2px 0; }
+.cv-output .cv-contact { font-size: 10pt; color: #444; margin: 4px 0 0; }
+.cv-output .cv-section { margin: 14px 0 0; }
+.cv-output .cv-section-title {
+  font-size: 12pt; font-weight: 700; color: #1a1a2e;
+  border-bottom: 2px solid #1a1a2e;
+  padding-bottom: 2px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cv-output .cv-item { margin-bottom: 10px; }
+.cv-output .cv-item-header { font-weight: 700; font-size: 11pt; }
+.cv-output .cv-item-date { font-size: 10pt; color: #777; }
+.cv-output ul { margin: 4px 0 0; padding-inline-start: 18px; }
+.cv-output li { font-size: 10.5pt; margin-bottom: 2px; }
+.cv-output .cv-skills { font-size: 10.5pt; }
+
+/* ATS Score */
+.ats-section { margin-top: 16px; padding: 14px; background: #f0f4ff; border-radius: 6px; border: 1px solid #d0d9f0; }
+.ats-section h3 { font-size: 13px; color: #1a1a2e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.ats-score { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+.ats-bar { height: 8px; background: #ddd; border-radius: 4px; margin: 6px 0 10px; }
+.ats-bar-fill { height: 100%; border-radius: 4px; background: #1a1a2e; transition: width 0.3s; }
+.ats-detail { font-size: 12px; color: #555; }
+.ats-detail ul { margin: 4px 0 0 16px; }
+.ats-detail li { margin-bottom: 2px; }
+.ats-missing { color: #d63031; }
+.ats-found { color: #27ae60; }
+
+@media (max-width: 800px) {
+  .container { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 1fr; }
+}
+@media print {
+  body { background: #fff; padding: 0; }
+  .form-section, .ats-section, .btn-group, .header { display: none !important; }
+  .container { display: block; }
+  .preview-section { box-shadow: none; border: none; padding: 0; border-radius: 0; }
+  .cv-output { padding: 0; }
+  @page { margin: 0.5in; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1 id="mainTitle">📄 منشئ السيرة الذاتية</h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="lang-toggle">
+        <button id="btnEn" onclick="setLang('en')">English</button>
+        <button id="btnAr" class="active" onclick="setLang('ar')">العربية</button>
+      </div>
+      <button class="btn-print" onclick="window.print()">🖨️ طباعة</button>
+    </div>
+  </div>
+
+  <!-- ====== FORM ====== -->
+  <div class="form-section">
+    <h2 id="lblPersonal">المعلومات الشخصية</h2>
+    <div class="single"><label id="lblName">الاسم الكامل</label><input id="fullName"></div>
+    <div class="row">
+      <div><label id="lblEmail">البريد الإلكتروني</label><input id="email" type="email"></div>
+      <div><label id="lblPhone">رقم الهاتف</label><input id="phone" type="tel"></div>
+    </div>
+    <div class="row">
+      <div><label id="lblLocation">الموقع (مدينة، دولة)</label><input id="location"></div>
+      <div><label id="lblLinkedin">LinkedIn (اختياري)</label><input id="linkedin" placeholder="linkedin.com/in/..."></div>
+    </div>
+
+    <h2 id="lblSummary">الملخص المهني</h2>
+    <div class="single"><textarea id="summary" rows="4"></textarea></div>
+
+    <h2 id="lblExp">الخبرات العملية</h2>
+    <div id="expContainer"></div>
+    <button class="add-btn" id="addExpBtn" onclick="addExp()">+ إضافة خبرة</button>
+
+    <h2 id="lblEdu">التعليم</h2>
+    <div id="eduContainer"></div>
+    <button class="add-btn" id="addEduBtn" onclick="addEdu()">+ إضافة شهادة</button>
+
+    <h2 id="lblSkills">المهارات</h2>
+    <div class="single">
+      <label id="lblSkillTag">اكتب مهارة واضغط Enter أو فاصلة</label>
+      <div class="tags-wrap" id="skillsWrap" onclick="document.getElementById('skillsInput').focus()">
+        <div id="skillsTags"></div>
+        <input class="tags-input" id="skillsInput" placeholder="أضف مهارة...">
+      </div>
+    </div>
+
+    <h2 id="lblLang">اللغات</h2>
+    <div id="langContainer"></div>
+    <button class="add-btn" id="addLangBtn" onclick="addLang()">+ إضافة لغة</button>
+
+    <h2 id="lblAtsOpt">محسن ATS</h2>
+    <div class="single">
+      <label id="lblJd">الصق الوصف الوظيفي للتحقق من تطابق الكلمات المفتاحية</label>
+      <textarea id="jdInput" rows="4" placeholder="الصق الوصف الوظيفي هنا..."></textarea>
+    </div>
+
+    <h2 id="lblImport">استيراد سيرة ذاتية</h2>
+    <div class="single">
+      <input type="file" id="pdfUpload" accept=".pdf" style="display:none">
+      <div class="import-zone" id="importZone" onclick="document.getElementById('pdfUpload').click()">
+        <span class="import-icon" id="importIcon">📄</span>
+        <div class="import-title" id="importTitle">ارفع ملف PDF أو اسحبه هنا</div>
+        <div class="import-sub" id="importSub">سيتم تحويل سيرتك الذاتية تلقائياً إلى تنسيق ATS</div>
+        <div class="import-status" id="importStatus"></div>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-pdf" onclick="generatePDF()" id="btnPdf">📄 PDF — عربي</button>
+      <button class="btn-pdf" onclick="generatePDFEn()" id="btnPdfEn">📄 PDF — English</button>
+      <button class="btn-reset" onclick="resetForm()" id="btnReset">🗑️ إعادة تعيين</button>
+    </div>
+  </div>
+
+  <!-- ====== PREVIEW ====== -->
+  <div class="preview-section">
+    <h2 id="lblPreview">معاينة الـ CV</h2>
+    <div class="cv-output" id="cvPreview">
+      <div class="cv-header">
+        <div class="cv-name" id="previewName">[الاسم]</div>
+        <div class="cv-title" id="previewTitle">[المسمى]</div>
+        <div class="cv-contact" id="previewContact"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secSummary">الملخص المهني</div>
+        <p id="previewSummary" style="font-size:10.5pt;"></p>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secExp">الخبرات العملية</div>
+        <div id="previewExp"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secEdu">التعليم</div>
+        <div id="previewEdu"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secSkills">المهارات</div>
+        <div class="cv-skills" id="previewSkills"></div>
+      </div>
+      <div class="cv-section">
+        <div class="cv-section-title" id="secLang">اللغات</div>
+        <div id="previewLang" style="font-size:10.5pt;"></div>
+      </div>
+    </div>
+
+    <!-- ATS Score -->
+    <div class="ats-section" id="atsSection">
+      <h3 id="atsTitle">تطابق الكلمات المفتاحية ATS</h3>
+      <div class="ats-score" id="atsScore">0%</div>
+      <div class="ats-bar"><div class="ats-bar-fill" id="atsBar" style="width:0%"></div></div>
+      <div class="ats-detail" id="atsDetail">الصق الوصف الوظيفي أعلاه لفحص التطابق.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== STATE ======
+let currentLang = 'ar';
+let skills = [];
+
+// ====== GENERIC INPUT LISTENER ======
+document.addEventListener('input', updatePreview);
+document.addEventListener('change', updatePreview);
+
+// ====== LANGUAGE ======
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btnEn').className = lang === 'en' ? 'active' : '';
+  document.getElementById('btnAr').className = lang === 'ar' ? 'active' : '';
+  document.body.className = lang === 'en' ? 'en' : '';
+  document.getElementById('cvPreview').className = 'cv-output' + (lang === 'en' ? ' en' : '');
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  translateUI(lang);
+  updatePreview();
+  updateAts();
+}
+
+function translateUI(lang) {
+  const t = lang === 'ar' ? {
+    mainTitle: '📄 منشئ السيرة الذاتية',
+    lblPersonal: 'المعلومات الشخصية',
+    lblName: 'الاسم الكامل', lblEmail: 'البريد الإلكتروني', lblPhone: 'رقم الهاتف',
+    lblLocation: 'الموقع (مدينة، دولة)', lblLinkedin: 'LinkedIn (اختياري)',
+    lblSummary: 'الملخص المهني',
+    lblExp: 'الخبرات العملية', addExpText: '+ إضافة خبرة',
+    lblEdu: 'التعليم', addEduText: '+ إضافة شهادة',
+    lblSkills: 'المهارات', lblSkillTag: 'اكتب مهارة واضغط Enter أو فاصلة',
+    skillPlaceholder: 'أضف مهارة...',
+    lblLang: 'اللغات', addLangText: '+ إضافة لغة',
+    lblAtsOpt: 'محسن ATS', lblJd: 'الصق الوصف الوظيفي للتحقق من تطابق الكلمات المفتاحية',
+    jdPlaceholder: 'الصق الوصف الوظيفي هنا...',
+    lblPreview: 'معاينة الـ CV',
+    secSummary: 'الملخص المهني', secExp: 'الخبرات العملية', secEdu: 'التعليم', secSkills: 'المهارات', secLang: 'اللغات',
+    atsTitle: 'تطابق الكلمات المفتاحية ATS',
+    atsEmpty: 'الصق الوصف الوظيفي أعلاه لفحص التطابق.',
+    atsFound: '✓ موجودة', atsMissing: '✗ مفقودة', atsNone: 'لا توجد كلمات مفتاحية كافية للمقارنة.',
+    btnPdf: '📄 PDF — عربي', btnPdfEn: '📄 PDF — English', btnReset: '🗑️ إعادة تعيين',
+    lblImport: 'استيراد سيرة ذاتية',
+    importTitle: 'ارفع ملف PDF أو اسحبه هنا',
+    importSub: 'سيتم تحويل سيرتك الذاتية تلقائياً إلى تنسيق ATS',
+    importWorking: 'جاري استخراج النص...', importDone: '✅ تم التحويل بنجاح!', importFail: '❌ فشل الاستيراد. تأكد من أن الـ PDF نص وليس صورة.'
+  } : {
+    mainTitle: '📄 CV Builder',
+    lblPersonal: 'Personal Information',
+    lblName: 'Full Name', lblEmail: 'Email', lblPhone: 'Phone',
+    lblLocation: 'Location (City, Country)', lblLinkedin: 'LinkedIn (optional)',
+    lblSummary: 'Professional Summary',
+    lblExp: 'Work Experience', addExpText: '+ Add Experience',
+    lblEdu: 'Education', addEduText: '+ Add Education',
+    lblSkills: 'Skills', lblSkillTag: 'Type a skill and press Enter or comma',
+    skillPlaceholder: 'Add skill...',
+    lblLang: 'Languages', addLangText: '+ Add Language',
+    lblAtsOpt: 'ATS Optimizer', lblJd: 'Paste Job Description below to check keyword match',
+    jdPlaceholder: 'Paste the job description here...',
+    lblPreview: 'CV Preview',
+    secSummary: 'Professional Summary', secExp: 'Work Experience', secEdu: 'Education', secSkills: 'Skills', secLang: 'Languages',
+    atsTitle: 'ATS Keyword Match',
+    atsEmpty: 'Paste a job description above to check keyword match.',
+    atsFound: '✓ Found', atsMissing: '✗ Missing', atsNone: 'No significant keywords to compare.',
+    btnPdf: '📄 PDF — عربي', btnPdfEn: '📄 PDF — English', btnReset: '🗑️ Reset All',
+    lblImport: 'Import CV',
+    importTitle: 'Upload a PDF or drag it here',
+    importSub: 'Your CV will be auto-converted to ATS-friendly format',
+    importWorking: 'Extracting text...', importDone: '✅ Converted successfully!', importFail: '❌ Import failed. Make sure the PDF contains selectable text.'
+  };
+
+  document.getElementById('mainTitle').textContent = t.mainTitle;
+  document.getElementById('lblPersonal').textContent = t.lblPersonal;
+  document.getElementById('lblName').textContent = t.lblName;
+  document.getElementById('lblEmail').textContent = t.lblEmail;
+  document.getElementById('lblPhone').textContent = t.lblPhone;
+  document.getElementById('lblLocation').textContent = t.lblLocation;
+  document.getElementById('lblLinkedin').textContent = t.lblLinkedin;
+  document.getElementById('lblSummary').textContent = t.lblSummary;
+  document.getElementById('lblExp').textContent = t.lblExp;
+  document.getElementById('addExpBtn').textContent = t.addExpText;
+  document.getElementById('lblEdu').textContent = t.lblEdu;
+  document.getElementById('addEduBtn').textContent = t.addEduText;
+  document.getElementById('lblSkills').textContent = t.lblSkills;
+  document.getElementById('lblSkillTag').textContent = t.lblSkillTag;
+  document.getElementById('skillsInput').placeholder = t.skillPlaceholder;
+  document.getElementById('lblLang').textContent = t.lblLang;
+  document.getElementById('addLangBtn').textContent = t.addLangText;
+  document.getElementById('lblAtsOpt').textContent = t.lblAtsOpt;
+  document.getElementById('lblJd').textContent = t.lblJd;
+  document.getElementById('jdInput').placeholder = t.jdPlaceholder;
+  document.getElementById('lblPreview').textContent = t.lblPreview;
+  document.getElementById('secSummary').textContent = t.secSummary;
+  document.getElementById('secExp').textContent = t.secExp;
+  document.getElementById('secEdu').textContent = t.secEdu;
+  document.getElementById('secSkills').textContent = t.secSkills;
+  document.getElementById('secLang').textContent = t.secLang;
+  document.getElementById('atsTitle').textContent = t.atsTitle;
+  document.getElementById('lblImport').textContent = t.lblImport;
+  document.getElementById('importTitle').textContent = t.importTitle;
+  document.getElementById('importSub').textContent = t.importSub;
+  document.getElementById('btnPdf').textContent = t.btnPdf;
+  document.getElementById('btnPdfEn').textContent = t.btnPdfEn;
+  document.getElementById('btnReset').textContent = t.btnReset;
+
+  // Update labels inside dynamic entries
+  document.querySelectorAll('#expContainer .entry').forEach(el => {
+    const labels = el.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = lang === 'ar' ? 'الشركة' : 'Company';
+    if (labels[1]) labels[1].textContent = lang === 'ar' ? 'المسمى' : 'Job Title';
+    if (labels[2]) labels[2].textContent = lang === 'ar' ? 'من (MM/YYYY)' : 'From (MM/YYYY)';
+    if (labels[3]) labels[3].textContent = lang === 'ar' ? 'إلى (MM/YYYY أو حتى الآن)' : 'To (MM/YYYY or Present)';
+    if (labels[4]) labels[4].textContent = lang === 'ar' ? 'الوصف (نقطة في سطر)' : 'Description (bullet points, one per line)';
+  });
+  document.querySelectorAll('#eduContainer .entry').forEach(el => {
+    const labels = el.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = lang === 'ar' ? 'الجامعة/المعهد' : 'Institution';
+    if (labels[1]) labels[1].textContent = lang === 'ar' ? 'الشهادة' : 'Degree';
+    if (labels[2]) labels[2].textContent = lang === 'ar' ? 'سنة التخرج' : 'Graduation Year';
+  });
+  document.querySelectorAll('#langContainer .entry').forEach(el => {
+    const labels = el.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = lang === 'ar' ? 'اللغة' : 'Language';
+    if (labels[1]) labels[1].textContent = lang === 'ar' ? 'المستوى' : 'Proficiency';
+  });
+}
+
+// ====== TAGS: SKILLS ======
+const skillsInput = document.getElementById('skillsInput');
+const skillsTags = document.getElementById('skillsTags');
+
+function addSkill(text) {
+  text = text.trim();
+  if (!text || skills.some(s => s.toLowerCase() === text.toLowerCase())) return;
+  skills.push(text);
+  renderSkills();
+  updatePreview();
+  updateAts();
+}
+
+function removeSkill(text) {
+  skills = skills.filter(s => s !== text);
+  renderSkills();
+  updatePreview();
+  updateAts();
+}
+
+function renderSkills() {
+  skillsTags.innerHTML = skills.map(s =>
+    `<span class="tag">${escapeHtml(s)}<span class="tag-remove" onclick="removeSkill('${escapeHtml(s)}')">×</span></span>`
+  ).join('');
+}
+
+skillsInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    addSkill(skillsInput.value);
+    skillsInput.value = '';
+  }
+});
+skillsInput.addEventListener('blur', () => {
+  if (skillsInput.value.trim()) {
+    addSkill(skillsInput.value);
+    skillsInput.value = '';
+  }
+});
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#039;').replace(/"/g,'&quot;');
+}
+
+// ====== EXPERIENCE ======
+function addExp(data) {
+  const c = document.getElementById('expContainer');
+  const lang = currentLang;
+  const d = document.createElement('div');
+  d.className = 'entry';
+  d.innerHTML = `
+    <button class="entry-remove" onclick="this.parentElement.remove(); updatePreview(); updateAts();">×</button>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'الشركة' : 'Company'}</label><input class="exp-company" value="${escapeHtml(data?.company||'')}"></div>
+      <div><label>${lang === 'ar' ? 'المسمى' : 'Job Title'}</label><input class="exp-role" value="${escapeHtml(data?.role||'')}"></div>
+    </div>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'من (MM/YYYY)' : 'From (MM/YYYY)'}</label><input class="exp-from" value="${escapeHtml(data?.from||'')}"></div>
+      <div><label>${lang === 'ar' ? 'إلى (MM/YYYY أو حتى الآن)' : 'To (MM/YYYY or Present)'}</label><input class="exp-to" value="${escapeHtml(data?.to||'')}"></div>
+    </div>
+    <div><label>${lang === 'ar' ? 'الوصف (نقطة في سطر)' : 'Description (bullet points, one per line)'}</label><textarea class="exp-achieve" rows="3">${escapeHtml(data?.achieve||'')}</textarea></div>
+  `;
+  c.appendChild(d);
+}
+
+// ====== EDUCATION ======
+function addEdu(data) {
+  const c = document.getElementById('eduContainer');
+  const lang = currentLang;
+  const d = document.createElement('div');
+  d.className = 'entry';
+  d.innerHTML = `
+    <button class="entry-remove" onclick="this.parentElement.remove(); updatePreview();">×</button>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'الجامعة/المعهد' : 'Institution'}</label><input class="edu-school" value="${escapeHtml(data?.school||'')}"></div>
+      <div><label>${lang === 'ar' ? 'الشهادة' : 'Degree'}</label><input class="edu-degree" value="${escapeHtml(data?.degree||'')}"></div>
+    </div>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'سنة التخرج' : 'Graduation Year'}</label><input class="edu-year" value="${escapeHtml(data?.year||'')}"></div>
+    </div>
+  `;
+  c.appendChild(d);
+}
+
+// ====== LANGUAGES ======
+function addLang(data) {
+  const c = document.getElementById('langContainer');
+  const lang = currentLang;
+  const d = document.createElement('div');
+  d.className = 'entry';
+  d.innerHTML = `
+    <button class="entry-remove" onclick="this.parentElement.remove(); updatePreview();">×</button>
+    <div class="row">
+      <div><label>${lang === 'ar' ? 'اللغة' : 'Language'}</label><input class="lang-name" value="${escapeHtml(data?.lang||'')}"></div>
+      <div><label>${lang === 'ar' ? 'المستوى' : 'Proficiency'}</label>
+        <select class="lang-level">
+          <option value="">${lang === 'ar' ? '-- اختر --' : '-- Select --'}</option>
+          <option value="Native" ${data?.level==='Native'?'selected':''}>${lang === 'ar' ? 'لغة أم' : 'Native'}</option>
+          <option value="Fluent" ${data?.level==='Fluent'?'selected':''}>${lang === 'ar' ? 'بطلاقة' : 'Fluent'}</option>
+          <option value="Advanced" ${data?.level==='Advanced'?'selected':''}>${lang === 'ar' ? 'متقدم' : 'Advanced'}</option>
+          <option value="Intermediate" ${data?.level==='Intermediate'?'selected':''}>${lang === 'ar' ? 'متوسط' : 'Intermediate'}</option>
+          <option value="Basic" ${data?.level==='Basic'?'selected':''}>${lang === 'ar' ? 'أساسي' : 'Basic'}</option>
+        </select>
+      </div>
+    </div>
+  `;
+  c.appendChild(d);
+}
+
+// ====== INIT DEFAULT ENTRIES ======
+addExp();
+addEdu();
+
+// ====== VAL HELPER ======
+function val(id) { return document.getElementById(id)?.value?.trim()||''; }
+
+// ====== UPDATE PREVIEW ======
+function updatePreview() {
+  const isAr = currentLang === 'ar';
+  document.getElementById('previewName').textContent = val('fullName') || (isAr ? '[الاسم]' : '[Your Name]');
+  document.getElementById('previewTitle').textContent = val('jobTitle') || (isAr ? '[المسمى]' : '[Job Title]');
+
+  const parts = [val('email'), val('phone'), val('location')].filter(Boolean);
+  const li = val('linkedin');
+  if (li) parts.push(li);
+  document.getElementById('previewContact').textContent = parts.join(' | ') || '';
+
+  document.getElementById('previewSummary').textContent = val('summary') || '';
+
+  // Experience
+  const expDiv = document.getElementById('previewExp');
+  const expEntries = document.querySelectorAll('#expContainer .entry');
+  if (expEntries.length === 0) {
+    expDiv.innerHTML = '';
+  } else {
+    let html = '';
+    expEntries.forEach(e => {
+      const co = e.querySelector('.exp-company')?.value || '';
+      const ro = e.querySelector('.exp-role')?.value || '';
+      const fr = e.querySelector('.exp-from')?.value || '';
+      const to = e.querySelector('.exp-to')?.value || '';
+      const ac = e.querySelector('.exp-achieve')?.value || '';
+      if (!co && !ro && !ac) return;
+      const sep = isAr ? ' — ' : ' — ';
+      const bullets = ac.split('\n').filter(Boolean).map(a => `<li>${escapeHtml(a)}</li>`).join('');
+      html += `<div class="cv-item"><div class="cv-item-header">${escapeHtml(ro)}${ro&&co?sep:''}${escapeHtml(co)}</div><div class="cv-item-date">${fr}${fr&&to?' — ':''}${to}</div><ul>${bullets}</ul></div>`;
+    });
+    expDiv.innerHTML = html;
+  }
+
+  // Education
+  const eduDiv = document.getElementById('previewEdu');
+  const eduEntries = document.querySelectorAll('#eduContainer .entry');
+  if (eduEntries.length === 0) {
+    eduDiv.innerHTML = '';
+  } else {
+    let html = '';
+    eduEntries.forEach(e => {
+      const sch = e.querySelector('.edu-school')?.value || '';
+      const deg = e.querySelector('.edu-degree')?.value || '';
+      const yr = e.querySelector('.edu-year')?.value || '';
+      if (!sch && !deg) return;
+      const sep = isAr ? ' — ' : ' — ';
+      html += `<div class="cv-item"><div class="cv-item-header">${escapeHtml(deg)}${deg&&sch?sep:''}${escapeHtml(sch)}</div><div class="cv-item-date">${yr}</div></div>`;
+    });
+    eduDiv.innerHTML = html;
+  }
+
+  // Skills
+  const skDiv = document.getElementById('previewSkills');
+  skDiv.textContent = skills.length > 0 ? skills.join(', ') : '';
+
+  // Languages
+  const langDiv = document.getElementById('previewLang');
+  const langEntries = document.querySelectorAll('#langContainer .entry');
+  if (langEntries.length === 0) {
+    langDiv.textContent = '';
+  } else {
+    const langs = [];
+    langEntries.forEach(e => {
+      const n = e.querySelector('.lang-name')?.value || '';
+      const l = e.querySelector('.lang-level')?.value || '';
+      if (n) langs.push(n + (l ? ` (${l})` : ''));
+    });
+    langDiv.textContent = langs.join(', ');
+  }
+}
+
+// ====== ATS SCORE ======
+function updateAts() {
+  const isAr = currentLang === 'ar';
+  const jd = val('jdInput');
+  if (!jd) {
+    document.getElementById('atsScore').textContent = '0%';
+    document.getElementById('atsBar').style.width = '0%';
+    document.getElementById('atsDetail').textContent = isAr ? 'الصق الوصف الوظيفي أعلاه لفحص التطابق.' : 'Paste a job description above to check keyword match.';
+    return;
+  }
+
+  const cvText = buildCvText().toLowerCase();
+  const jdWords = jd.toLowerCase().split(/[^a-z0-9+#.-]+/).filter(w => w.length > 2);
+  const uniqueJdWords = [...new Set(jdWords)];
+
+  const stopWords = new Set(['the','and','for','are','but','not','you','all','can','had','her','was','one','our','out','has','have','been','some','them','than','what','when','your','which','will','each','about','into','with','their','other','this','that','from','also','more','would','should','could']);
+  const filtered = uniqueJdWords.filter(w => !stopWords.has(w));
+
+  const found = [];
+  const missing = [];
+  filtered.forEach(w => {
+    if (cvText.includes(w)) found.push(w);
+    else missing.push(w);
+  });
+
+  const score = filtered.length > 0 ? Math.round((found.length / filtered.length) * 100) : 0;
+
+  document.getElementById('atsScore').textContent = score + '%';
+  document.getElementById('atsBar').style.width = score + '%';
+  document.getElementById('atsBar').style.background = score >= 60 ? '#27ae60' : score >= 30 ? '#f39c12' : '#d63031';
+
+  let detail = '';
+  if (found.length > 0) detail += `<div class="ats-found">${isAr ? '✓ موجودة' : '✓ Found'} (${found.length}): ${found.join(', ')}</div>`;
+  if (missing.length > 0) detail += `<div class="ats-missing" style="margin-top:4px;">${isAr ? '✗ مفقودة' : '✗ Missing'} (${missing.length}): ${missing.join(', ')}</div>`;
+  if (!detail) detail = `<span style="color:#999;">${isAr ? 'لا توجد كلمات مفتاحية كافية للمقارنة.' : 'No significant keywords to compare.'}</span>`;
+  document.getElementById('atsDetail').innerHTML = detail;
+}
+
+function buildCvText() {
+  const name = val('fullName');
+  const title = val('jobTitle');
+  const summary = val('summary');
+  const skills = document.getElementById('previewSkills').textContent;
+  const lang = document.getElementById('previewLang').textContent;
+
+  let text = [name, title, summary, skills, lang].filter(Boolean).join(' ');
+
+  document.querySelectorAll('#expContainer .exp-achieve').forEach(el => { if (el.value) text += ' ' + el.value; });
+  document.querySelectorAll('#expContainer .exp-company').forEach(el => { if (el.value) text += ' ' + el.value; });
+  document.querySelectorAll('#expContainer .exp-role').forEach(el => { if (el.value) text += ' ' + el.value; });
+  document.querySelectorAll('#eduContainer .edu-school').forEach(el => { if (el.value) text += ' ' + el.value; });
+  document.querySelectorAll('#eduContainer .edu-degree').forEach(el => { if (el.value) text += ' ' + el.value; });
+
+  return text;
+}
+
+// ====== JD INPUT LISTENER ======
+document.getElementById('jdInput').addEventListener('input', updateAts);
+
+// ====== EXPORT PDF ======
+function generatePDF() {
+  updatePreview();
+  const name = val('fullName') || 'CV';
+  const el = buildPdfClone();
+  const opt = {
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: name.replace(/\s+/g, '_') + '_CV.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+  setTimeout(() => {
+    html2pdf().set(opt).from(el).save().then(() => { if (el.parentNode) el.parentNode.removeChild(el); });
+  }, 100);
+}
+
+function generatePDFEn() {
+  const prevLang = currentLang;
+  setLang('en');
+  updatePreview();
+  const name = val('fullName') || 'CV';
+  const el = buildPdfClone();
+  const opt = {
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: name.replace(/\s+/g, '_') + '_CV_EN.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+  setTimeout(() => {
+    html2pdf().set(opt).from(el).save().then(() => { if (el.parentNode) el.parentNode.removeChild(el); setLang(prevLang); });
+  }, 100);
+}
+
+function buildPdfClone() {
+  const original = document.getElementById('cvPreview');
+  const clone = original.cloneNode(true);
+  clone.id = 'pdfClone';
+  clone.style.cssText = 'position:fixed;left:0;top:0;width:800px;background:#fff;padding:40px 30px;z-index:-1;direction:' + (currentLang === 'ar' ? 'rtl' : 'ltr') + ';text-align:' + (currentLang === 'ar' ? 'right' : 'left');
+  document.body.appendChild(clone);
+  return clone;
+}
+
+// ====== PDF IMPORT ======
+const importZone = document.getElementById('importZone');
+const importIcon = document.getElementById('importIcon');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+  importZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+});
+importZone.addEventListener('dragenter', () => importZone.classList.add('dragover'));
+importZone.addEventListener('dragover', () => importZone.classList.add('dragover'));
+importZone.addEventListener('dragleave', () => importZone.classList.remove('dragover'));
+importZone.addEventListener('drop', e => {
+  importZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') {
+    document.getElementById('pdfUpload').files = e.dataTransfer.files;
+    document.getElementById('pdfUpload').dispatchEvent(new Event('change'));
+  }
+});
+
+document.getElementById('pdfUpload').addEventListener('change', async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const isAr = currentLang === 'ar';
+  importIcon.textContent = '⏳';
+  document.getElementById('importStatus').textContent = isAr ? 'جاري استخراج النص...' : 'Extracting text...';
+  document.getElementById('importStatus').style.color = '#0984e3';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    parseAndFillCv(fullText);
+    importIcon.textContent = '✅';
+    document.getElementById('importStatus').textContent = isAr ? 'تم التحويل بنجاح!' : 'Converted successfully!';
+    document.getElementById('importStatus').style.color = '#27ae60';
+  } catch (err) {
+    importIcon.textContent = '❌';
+    document.getElementById('importStatus').textContent = isAr ? 'فشل الاستيراد، الـ PDF قد يكون صورة وليس نصاً' : 'Import failed — PDF may be a scanned image';
+    document.getElementById('importStatus').style.color = '#d63031';
+  }
+  this.value = '';
+  setTimeout(() => { importIcon.textContent = '📄'; document.getElementById('importStatus').textContent = ''; }, 4000);
+});
+
+function parseAndFillCv(text) {
+  const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
+
+  // Extract email
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (emailMatch) document.getElementById('email').value = emailMatch[0];
+
+  // Extract phone
+  const phoneMatch = text.match(/(?:\+?[\d-]+[\s\-]?)?(?:\d{3,4}[\s\-]?\d{3}[\s\-]?\d{3,4})/);
+  if (phoneMatch) document.getElementById('phone').value = phoneMatch[0].trim();
+
+  // Extract LinkedIn
+  const liMatch = text.match(/linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
+  if (liMatch) document.getElementById('linkedin').value = liMatch[0];
+
+  // Extract location: look for "City, Country" pattern
+  const locMatch = text.match(/(?:Location|الموقع|Address|City|المدينة)[:\s]+(.+?)(?:\n|$)/i);
+  if (locMatch) document.getElementById('location').value = locMatch[1].trim();
+
+  // Estimate name: first non-empty, non-contact line (skip email/phone/linkedin lines)
+  let nameFound = false;
+  for (const line of lines) {
+    if (line.length < 3) continue;
+    if (line.match(/@|linkedin|http|www|\.com|^\+|^\d/)) continue;
+    if (line.match(/^summary|^professional|^ملخص|^خبرات|^education|^تعليم|^skills|^مهارات|^languages|^لغات|^experience/i)) break;
+    if (!nameFound && line.length > 3) {
+      document.getElementById('fullName').value = line;
+      nameFound = true;
+      break;
+    }
+  }
+
+  // Extract job title: second line after name
+  if (nameFound) {
+    const nameIdx = lines.findIndex(l => l === document.getElementById('fullName').value);
+    if (nameIdx >= 0 && nameIdx + 1 < lines.length) {
+      const nextLine = lines[nameIdx + 1];
+      if (nextLine && !nextLine.match(/@|linkedin|http|www|\.com|^\+|^\d/) && nextLine.length < 80) {
+        document.getElementById('jobTitle').value = nextLine;
+      }
+    }
+  }
+
+  // Identify sections using common headers
+  const sectionMarkers = {
+    summary: ['professional summary', 'summary', 'professional', 'الملخص المهني', 'ملخص مهني', 'ملخص'],
+    experience: ['work experience', 'experience', 'employment history', 'employment', 'professional experience', 'الخبرات العملية', 'الخبرات', 'خبرات', 'خبرة'],
+    education: ['education', 'academic background', 'التعليم', 'المؤهلات', 'المؤهل'],
+    skills: ['skills', 'core competencies', 'technical skills', 'key skills', 'المهارات', 'المهارات التقنية', 'المهارات الشخصية'],
+    languages: ['languages', 'language', 'اللغات', 'اللغة']
+  };
+
+  function findSectionEnd(startIdx, markers) {
+    for (let i = startIdx; i < lines.length; i++) {
+      const l = lines[i].toLowerCase();
+      for (const [section, keywords] of Object.entries(sectionMarkers)) {
+        if (keywords.some(k => l.includes(k) && l.length < 60) && i !== startIdx) return i;
+      }
+    }
+    return lines.length;
+  }
+
+  let currentSection = null;
+  let sectionStart = -1;
+  const sections = {};
+
+  lines.forEach((line, idx) => {
+    const l = line.toLowerCase();
+    for (const [section, keywords] of Object.entries(sectionMarkers)) {
+      if (keywords.some(k => l.includes(k) && l.length < 60)) {
+        if (currentSection) sections[currentSection] = { start: sectionStart, end: idx };
+        currentSection = section;
+        sectionStart = idx;
+        break;
+      }
+    }
+  });
+  if (currentSection) sections[currentSection] = { start: sectionStart, end: lines.length };
+
+  // Extract summary
+  if (sections.summary) {
+    const sumLines = lines.slice(sections.summary.start + 1, sections.summary.end).filter(l => l.length > 5);
+    document.getElementById('summary').value = sumLines.join(' ');
+  }
+
+  // Extract experience
+  if (sections.experience) {
+    const expLines = lines.slice(sections.experience.start + 1, sections.experience.end);
+    document.getElementById('expContainer').innerHTML = '';
+    parseExpBlocks(expLines);
+  }
+
+  // Extract education
+  if (sections.education) {
+    const eduLines = lines.slice(sections.education.start + 1, sections.education.end);
+    document.getElementById('eduContainer').innerHTML = '';
+    parseEduBlocks(eduLines);
+  }
+
+  // Extract skills
+  if (sections.skills) {
+    const skLines = lines.slice(sections.skills.start + 1, sections.skills.end);
+    const skText = skLines.join(', ').replace(/[,;]+/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+    skills = [];
+    skText.forEach(s => { if (s.length > 1) addSkill(s); });
+  }
+
+  // Extract languages
+  if (sections.languages) {
+    const langLines = lines.slice(sections.languages.start + 1, sections.languages.end).filter(l => l.length > 1);
+    document.getElementById('langContainer').innerHTML = '';
+    langLines.forEach(ll => {
+      const parts = ll.split(/[:(,]/).map(s => s.trim()).filter(Boolean);
+      addLang({ lang: parts[0] || ll, level: parts[1] || '' });
+    });
+  }
+
+  // If no sections found, do fallback parsing
+  if (Object.keys(sections).length === 0) {
+    fallbackParse(lines, text);
+  }
+
+  updatePreview();
+  updateAts();
+}
+
+function parseExpBlocks(lines) {
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Skip section-like headers
+    if (line.length < 3) { i++; continue; }
+
+    // Look for company/role line (not a date, not a bullet, not too short)
+    if (line.match(/^\d{1,2}\/\d{4}|(?:^|\s)(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i) || line.match(/^[•\-*–—]/)) {
+      i++; continue;
+    }
+
+    // Assume this is a company/role line
+    const blockLines = [line];
+    i++;
+
+    // Collect description lines until we hit the next company or end
+    while (i < lines.length) {
+      const next = lines[i];
+      // Check if next line looks like a new company entry (short, no bullet, not a date)
+      if (next.length < 60 && !next.match(/^[•\-*–—]/) && !next.match(/^\d{1,2}\/\d{4}/) && next.length > 2 && i > lines.indexOf(line)) {
+        // Check if previous block has at least one bullet point
+        if (blockLines.some(l => l.match(/^[•\-*–—]/))) {
+          break;
+        }
+      }
+      if (next.match(/^[•\-*–—]/) || next.match(/^\d{1,2}\/\d{4}/i)) {
+        blockLines.push(next);
+        i++;
+      } else if (next.length < 60 && !next.match(/[@http]/) && next.length > 2 && blockLines.length > 1) {
+        break;
+      } else {
+        blockLines.push(next);
+        i++;
+      }
+    }
+
+    // Parse block
+    const roleLine = blockLines[0];
+    // Try to extract company and role (separated by — or – or - or | or at)
+    let company = '', role = roleLine;
+    const sepMatch = roleLine.match(/^(.+?)\s*[–—|–]\s*(.+)$/);
+    if (sepMatch) {
+      // Could be "Role — Company" or "Company — Role"
+      // Usually Arabic is "Role — Company", English is "Role — Company" or "Company | Role"
+      if (sepMatch[1].length < sepMatch[2].length) { company = sepMatch[2]; role = sepMatch[1]; }
+      else { company = sepMatch[1]; role = sepMatch[2]; }
+    } else {
+      // Check for "at" or "في" separator
+      const atMatch = roleLine.match(/^(.+?)\s+(?:at|في|@)\s+(.+)$/i);
+      if (atMatch) { role = atMatch[1]; company = atMatch[2]; }
+    }
+
+    // Extract dates
+    let from = '', to = '';
+    const dateLine = blockLines.find(l => l.match(/\d{1,2}\/\d{4}/));
+    if (dateLine) {
+      const dates = dateLine.match(/(\d{1,2}\/\d{4})/g);
+      if (dates) {
+        from = dates[0];
+        to = dates.length > 1 ? dates[1] : 'Present';
+      }
+    }
+
+    // Extract bullet points
+    const bullets = blockLines.filter(l => l.match(/^[•\-*–—]/)).map(l => l.replace(/^[•\-*–—]\s*/, '')).join('\n');
+
+    addExp({ company, role, from, to, achieve: bullets });
+  }
+}
+
+function parseEduBlocks(lines) {
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (line.length < 2) { i++; continue; }
+
+    const block = [line];
+    i++;
+    while (i < lines.length && lines[i].length > 2 && !Object.values({
+      edu: ['education', 'التعليم', 'experience', 'الخبرات', 'skills', 'المهارات']
+    }).flat().some(k => lines[i].toLowerCase().includes(k) && lines[i].length < 50)) {
+      block.push(lines[i]);
+      i++;
+    }
+
+    let school = '', degree = '', year = '';
+    for (const l of block) {
+      if (l.match(/\d{4}/)) year = l.match(/\d{4}/)[0];
+      if (l.match(/(?:university|college|institute|school|جامعة|معهد|كلية|أكاديمية)/i) && !school) school = l;
+      if (l.match(/(?:bachelor|master|phd|degree|diploma|بكالوريوس|ماجستير|دكتوراه|دبلوم|licence)/i) && !degree) degree = l;
+    }
+    if (!school && block.length > 0) school = block[0];
+    if (!degree && block.length > 1) degree = block[1];
+
+    if (school || degree) addEdu({ school, degree, year });
+  }
+}
+
+function fallbackParse(lines, text) {
+  // Try to extract email, phone, name, title (already done above)
+  // Try to find a paragraph that looks like a summary (2-5 lines, 50+ chars each)
+  let summaryLines = [];
+  for (const line of lines) {
+    if (line.length > 40 && !line.match(/@|http|www|linkedin|^\d|^\+/)) {
+      summaryLines.push(line);
+      if (summaryLines.length >= 4) break;
+    } else if (summaryLines.length > 0 && line.length < 20) {
+      break;
+    }
+  }
+  if (summaryLines.length > 0) document.getElementById('summary').value = summaryLines.join(' ');
+
+  // Extract skills: look for comma-separated skill words
+  const skillPattern = lines.find(l => {
+    const words = l.split(/[,،]/).map(s => s.trim()).filter(Boolean);
+    return words.length >= 3 && words.some(w => ['management','development','design','analysis','planning','coordination','communication','microsoft','excel','word','powerpoint','project','document'].some(k => w.toLowerCase().includes(k)));
+  });
+  if (skillPattern) {
+    skillPattern.split(/[,،]/).map(s => s.trim()).filter(Boolean).forEach(s => { if (s.length > 1) addSkill(s); });
+  }
+
+  // Try to find experience from bullet points
+  const bulletLines = lines.filter(l => l.match(/^[•\-*–—]/));
+  if (bulletLines.length > 0) {
+    document.getElementById('expContainer').innerHTML = '';
+    const ach = bulletLines.map(l => l.replace(/^[•\-*–—]\s*/, '')).join('\n');
+    addExp({ company: '', role: '', from: '', to: '', achieve: ach });
+  }
+}
+function resetForm() {
+  const isAr = currentLang === 'ar';
+  if (!confirm(isAr ? 'مسح كل البيانات؟' : 'Clear all data?')) return;
+  document.querySelectorAll('input, textarea').forEach(e => e.value = '');
+  document.getElementById('expContainer').innerHTML = '';
+  document.getElementById('eduContainer').innerHTML = '';
+  document.getElementById('langContainer').innerHTML = '';
+  skills = [];
+  renderSkills();
+  addExp();
+  addEdu();
+  updatePreview();
+  updateAts();
+}
+
+// ====== INIT ======
+updatePreview();
+</script>
+</body>
+</html>
