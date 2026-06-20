@@ -272,10 +272,22 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #1a1a2e
 
     <!-- ATS Score -->
     <div class="ats-section" id="atsSection">
-      <h3 id="atsTitle">تطابق الكلمات المفتاحية ATS</h3>
-      <div class="ats-score" id="atsScore">0%</div>
+      <h3 id="atsTitle">تقييم ATS الشامل</h3>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:6px;">
+        <span class="ats-score" id="atsScore">0%</span>
+        <span style="font-size:11px;color:#888;" id="atsLabelBase">التقييم العام</span>
+      </div>
       <div class="ats-bar"><div class="ats-bar-fill" id="atsBar" style="width:0%"></div></div>
-      <div class="ats-detail" id="atsDetail">الصق الوصف الوظيفي أعلاه لفحص التطابق.</div>
+      <div class="ats-detail" id="atsDetail"></div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ccc;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <span class="ats-score" id="atsKwdScore" style="font-size:15px;">--</span>
+          <span style="font-size:11px;color:#888;" id="atsLabelKwd">تطابق مع الوصف الوظيفي</span>
+        </div>
+        <div class="ats-bar" style="height:5px;"><div class="ats-bar-fill" id="atsKwdBar" style="width:0%;background:#888;"></div></div>
+        <div class="ats-detail" id="atsKwdDetail" style="margin-top:4px;"></div>
+      </div>
+      <div class="ats-detail" id="atsSuggestions" style="margin-top:8px;padding:8px;background:#fff8e1;border-radius:4px;display:none;"></div>
     </div>
   </div>
 </div>
@@ -319,7 +331,7 @@ function translateUI(lang) {
     jdPlaceholder: 'الصق الوصف الوظيفي هنا...',
     lblPreview: 'معاينة الـ CV',
     secSummary: 'الملخص المهني', secExp: 'الخبرات العملية', secEdu: 'التعليم', secSkills: 'المهارات', secLang: 'اللغات',
-    atsTitle: 'تطابق الكلمات المفتاحية ATS',
+    atsTitle: 'تقييم ATS الشامل', atsLabelBase: 'التقييم العام', atsLabelKwd: 'تطابق مع الوصف الوظيفي',
     atsEmpty: 'الصق الوصف الوظيفي أعلاه لفحص التطابق.',
     atsFound: '✓ موجودة', atsMissing: '✗ مفقودة', atsNone: 'لا توجد كلمات مفتاحية كافية للمقارنة.',
     btnPdf: '📄 PDF — عربي', btnPdfEn: '📄 PDF — English', btnReset: '🗑️ إعادة تعيين',
@@ -342,7 +354,7 @@ function translateUI(lang) {
     jdPlaceholder: 'Paste the job description here...',
     lblPreview: 'CV Preview',
     secSummary: 'Professional Summary', secExp: 'Work Experience', secEdu: 'Education', secSkills: 'Skills', secLang: 'Languages',
-    atsTitle: 'ATS Keyword Match',
+    atsTitle: 'ATS Comprehensive Score', atsLabelBase: 'Overall score', atsLabelKwd: 'Job description match',
     atsEmpty: 'Paste a job description above to check keyword match.',
     atsFound: '✓ Found', atsMissing: '✗ Missing', atsNone: 'No significant keywords to compare.',
     btnPdf: '📄 PDF — عربي', btnPdfEn: '📄 PDF — English', btnReset: '🗑️ Reset All',
@@ -379,6 +391,8 @@ function translateUI(lang) {
   document.getElementById('secSkills').textContent = t.secSkills;
   document.getElementById('secLang').textContent = t.secLang;
   document.getElementById('atsTitle').textContent = t.atsTitle;
+  document.getElementById('atsLabelBase').textContent = t.atsLabelBase;
+  document.getElementById('atsLabelKwd').textContent = t.atsLabelKwd;
   document.getElementById('lblImport').textContent = t.lblImport;
   document.getElementById('importTitle').textContent = t.importTitle;
   document.getElementById('importSub').textContent = t.importSub;
@@ -597,13 +611,105 @@ function updatePreview() {
 }
 
 // ====== ATS SCORE ======
+function calcAtsCompleteness() {
+  const checks = [];
+  // 1. Name filled
+  checks.push({ pass: !!val('fullName'), label: 'الاسم', labelEn: 'Full name', weight: 10 });
+  // 2. Email
+  checks.push({ pass: !!val('email'), label: 'البريد الإلكتروني', labelEn: 'Email', weight: 8 });
+  // 3. Phone
+  checks.push({ pass: !!val('phone'), label: 'رقم الهاتف', labelEn: 'Phone', weight: 8 });
+  // 4. Location
+  checks.push({ pass: !!val('location'), label: 'الموقع', labelEn: 'Location', weight: 5 });
+  // 5. Summary with decent length
+  checks.push({ pass: (val('summary') || '').length > 30, label: 'ملخص مهني (أكثر من 30 حرفاً)', labelEn: 'Professional summary (>30 chars)', weight: 15 });
+  // 6. At least 1 experience
+  const expEntries = document.querySelectorAll('#expContainer .entry');
+  let hasExp = false;
+  expEntries.forEach(e => { if (e.querySelector('.exp-company')?.value || e.querySelector('.exp-role')?.value) hasExp = true; });
+  checks.push({ pass: hasExp, label: 'خبرات عملية', labelEn: 'Work experience', weight: 15 });
+  // 7. At least 1 education
+  const eduEntries = document.querySelectorAll('#eduContainer .entry');
+  let hasEdu = false;
+  eduEntries.forEach(e => { if (e.querySelector('.edu-school')?.value || e.querySelector('.edu-degree')?.value) hasEdu = true; });
+  checks.push({ pass: hasEdu, label: 'مؤهل تعليمي', labelEn: 'Education', weight: 12 });
+  // 8. At least 3 skills
+  checks.push({ pass: skills.length >= 3, label: 'مهارات (3+)', labelEn: 'Skills (3+)', weight: 12 });
+  // 9. At least 1 language
+  const langEntries = document.querySelectorAll('#langContainer .entry');
+  let hasLang = false;
+  langEntries.forEach(e => { if (e.querySelector('.lang-name')?.value) hasLang = true; });
+  checks.push({ pass: hasLang, label: 'لغات', labelEn: 'Languages', weight: 5 });
+  // 10. LinkedIn
+  checks.push({ pass: !!val('linkedin'), label: 'LinkedIn', labelEn: 'LinkedIn', weight: 5 });
+  // 11. Experience has bullet points
+  let hasBullets = false;
+  expEntries.forEach(e => { if ((e.querySelector('.exp-achieve')?.value || '').length > 10) hasBullets = true; });
+  checks.push({ pass: hasBullets, label: 'إنجازات ونقاط في الخبرات', labelEn: 'Achievements in experience', weight: 5 });
+
+  const totalWeight = checks.reduce((s, c) => s + c.weight, 0);
+  const earned = checks.reduce((s, c) => s + (c.pass ? c.weight : 0), 0);
+  const score = Math.round((earned / totalWeight) * 100);
+  return { score, checks };
+}
+
 function updateAts() {
   const isAr = currentLang === 'ar';
+
+  // --- General completeness score ---
+  const comp = calcAtsCompleteness();
+  const s = comp.score;
+  document.getElementById('atsScore').textContent = s + '%';
+  document.getElementById('atsBar').style.width = s + '%';
+  document.getElementById('atsBar').style.background = s >= 70 ? '#27ae60' : s >= 40 ? '#f39c12' : '#d63031';
+
+  let detail = `<div style="font-size:11px;color:#555;margin-bottom:4px;">${isAr ? 'تقييم اكتمال السيرة الذاتية' : 'CV completeness evaluation'}:</div><ul>`;
+  comp.checks.forEach(c => {
+    const icon = c.pass ? '✅' : '❌';
+    const label = isAr ? c.label : c.labelEn;
+    detail += `<li style="font-size:11px;margin-bottom:2px;">${icon} ${label}</li>`;
+  });
+  detail += '</ul>';
+  document.getElementById('atsDetail').innerHTML = detail;
+
+  // --- Suggestions ---
+  const failed = comp.checks.filter(c => !c.pass);
+  const suggEl = document.getElementById('atsSuggestions');
+  if (failed.length > 0) {
+    suggEl.style.display = 'block';
+    const suggLabel = isAr ? '💡 اقتراحات للتحسين' : '💡 Suggestions to improve';
+    let items = '';
+    failed.forEach(c => {
+      const label = isAr ? c.label : c.labelEn;
+      if (c.label === 'الاسم') items += `<div>- ${isAr ? 'أضف اسمك الكامل' : 'Add your full name'}</div>`;
+      else if (c.label === 'البريد الإلكتروني') items += `<div>- ${isAr ? 'أضف بريداً إلكترونياً احترافياً' : 'Add a professional email'}</div>`;
+      else if (c.label === 'رقم الهاتف') items += `<div>- ${isAr ? 'أضف رقم هاتف للتواصل' : 'Add a phone number'}</div>`;
+      else if (c.label === 'الموقع') items += `<div>- ${isAr ? 'أضف موقعك (مدينة، دولة)' : 'Add your location (City, Country)'}</div>`;
+      else if (c.label === 'ملخص مهني (أكثر من 30 حرفاً)') items += `<div>- ${isAr ? 'اكتب ملخصاً مهنياً من 2-3 جمل يصف خبراتك' : 'Write a 2-3 sentence professional summary'}</div>`;
+      else if (c.label === 'خبرات عملية') items += `<div>- ${isAr ? 'أضف خبراتك العملية السابقة' : 'Add your work experience'}</div>`;
+      else if (c.label === 'مؤهل تعليمي') items += `<div>- ${isAr ? 'أضف مؤهلاتك التعليمية' : 'Add your education'}</div>`;
+      else if (c.label === 'مهارات (3+)') items += `<div>- ${isAr ? 'أضف 3 مهارات على الأقل (تقنية، إدارية)' : 'Add at least 3 skills (technical, managerial)'}</div>`;
+      else if (c.label === 'لغات') items += `<div>- ${isAr ? 'أضف اللغات التي تتقنها' : 'Add languages you speak'}</div>`;
+      else if (c.label === 'LinkedIn') items += `<div>- ${isAr ? 'أضف رابط LinkedIn (يزيد مصداقية)' : 'Add LinkedIn profile (boosts credibility)'}</div>`;
+      else if (c.label === 'إنجازات ونقاط في الخبرات') items += `<div>- ${isAr ? 'أضف نقاط إنجاز لكل خبرة (تبدأ بفعل ماضٍ)' : 'Add bullet-point achievements for each role'}</div>`;
+    });
+    suggEl.innerHTML = `<strong>${suggLabel}</strong><div style="margin-top:4px;font-size:11px;">${items}</div>`;
+  } else {
+    suggEl.style.display = 'none';
+  }
+
+  // --- Keyword match (only if JD pasted) ---
   const jd = val('jdInput');
+  const kwdScoreEl = document.getElementById('atsKwdScore');
+  const kwdBarEl = document.getElementById('atsKwdBar');
+  const kwdDetailEl = document.getElementById('atsKwdDetail');
+
   if (!jd) {
-    document.getElementById('atsScore').textContent = '0%';
-    document.getElementById('atsBar').style.width = '0%';
-    document.getElementById('atsDetail').textContent = isAr ? 'الصق الوصف الوظيفي أعلاه لفحص التطابق.' : 'Paste a job description above to check keyword match.';
+    kwdScoreEl.textContent = '--';
+    kwdScoreEl.style.color = '#888';
+    kwdBarEl.style.width = '0%';
+    kwdBarEl.style.background = '#ccc';
+    kwdDetailEl.textContent = isAr ? 'الصق وصفاً وظيفياً لتحليل تطابق الكلمات المفتاحية' : 'Paste a job description to analyze keyword match';
     return;
   }
 
@@ -621,17 +727,18 @@ function updateAts() {
     else missing.push(w);
   });
 
-  const score = filtered.length > 0 ? Math.round((found.length / filtered.length) * 100) : 0;
+  const kwdScore = filtered.length > 0 ? Math.round((found.length / filtered.length) * 100) : 0;
 
-  document.getElementById('atsScore').textContent = score + '%';
-  document.getElementById('atsBar').style.width = score + '%';
-  document.getElementById('atsBar').style.background = score >= 60 ? '#27ae60' : score >= 30 ? '#f39c12' : '#d63031';
+  kwdScoreEl.textContent = kwdScore + '%';
+  kwdScoreEl.style.color = '#1a1a2e';
+  kwdBarEl.style.width = kwdScore + '%';
+  kwdBarEl.style.background = kwdScore >= 60 ? '#27ae60' : kwdScore >= 30 ? '#f39c12' : '#d63031';
 
-  let detail = '';
-  if (found.length > 0) detail += `<div class="ats-found">${isAr ? '✓ موجودة' : '✓ Found'} (${found.length}): ${found.join(', ')}</div>`;
-  if (missing.length > 0) detail += `<div class="ats-missing" style="margin-top:4px;">${isAr ? '✗ مفقودة' : '✗ Missing'} (${missing.length}): ${missing.join(', ')}</div>`;
-  if (!detail) detail = `<span style="color:#999;">${isAr ? 'لا توجد كلمات مفتاحية كافية للمقارنة.' : 'No significant keywords to compare.'}</span>`;
-  document.getElementById('atsDetail').innerHTML = detail;
+  let kd = '';
+  if (found.length > 0) kd += `<div class="ats-found">${isAr ? '✓ كلمات متطابقة' : '✓ Matched keywords'} (${found.length}): ${found.join(', ')}</div>`;
+  if (missing.length > 0) kd += `<div class="ats-missing" style="margin-top:4px;">${isAr ? '✗ كلمات مفقودة' : '✗ Missing keywords'} (${missing.length}): ${missing.join(', ')}</div>`;
+  if (!kd) kd = `<span style="color:#999;">${isAr ? 'لا توجد كلمات مفتاحية كافية للمقارنة.' : 'No significant keywords to compare.'}</span>`;
+  kwdDetailEl.innerHTML = kd;
 }
 
 function buildCvText() {
